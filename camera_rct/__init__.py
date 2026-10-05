@@ -1,1 +1,1 @@
-"""Local RTSP recording application (Python 3.8+)."""
+"""Local RTSP recording application (target runtime: Python 3.10)."""

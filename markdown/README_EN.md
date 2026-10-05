@@ -2,7 +2,7 @@
 
 [中文（默认）](../README.md) | English
 
-A compact, large-text recording interface for Ubuntu 20.04 desktop and Ubuntu 20.04 under Windows WSL2. One Python application serves the frontend and runs independent FFmpeg workers. Requires Python 3.8+ and FFmpeg; no pip packages or Node.js. The UI is approximately 490px wide; resize the browser window for a small control panel.
+A compact, large-text recording interface for Ubuntu 20.04 desktop and Ubuntu 20.04 under Windows WSL2. One Python application serves the frontend and runs independent FFmpeg workers. Uses Python 3.10 and FFmpeg; no pip packages or Node.js. The UI is approximately 490px wide; resize the browser window for a small control panel.
 
 ## Features
 
@@ -15,20 +15,60 @@ A compact, large-text recording interface for Ubuntu 20.04 desktop and Ubuntu 20
 
 There was no legacy recorder in the repository, so naming and MKV are new defaults. The interface displays recording status, without live video preview. Independent connections do not provide frame-level synchronization.
 
-## Setup and launch
+## Runtime and dependencies
 
-From the repository directory:
+Use **Python 3.10**. The application and tests use only the Python standard library: **no third-party Python packages are required**. The repository's `requirements.txt` documents this and contains no pip dependencies.
+
+| Dependency | Purpose and installation |
+| --- | --- |
+| Python 3.10 standard library | `http.server` serves the UI; `subprocess`, `threading` and `selectors` manage recording workers; `json` and `pathlib` persist configuration; `fcntl` provides the Linux process lock; `unittest` runs tests. Included with Python; no pip installation needed |
+| FFmpeg / ffprobe | System command-line tools for RTSP recording and video verification. Install the Ubuntu `ffmpeg` package; these are not Python packages |
+| Browser | Opens the local interface; WSL2 can use a Windows browser |
+
+### Dependency checklist for a fresh WSL Ubuntu installation
+
+- **Python runtime:** Python 3.10, including its standard library.
+- **Ubuntu system packages:** `ffmpeg`, which provides both the `ffmpeg` and `ffprobe` commands. apt automatically installs its required system dependencies.
+- **Python packages installed through pip:** None. OpenCV, Flask, NumPy and Python FFmpeg wrappers are unnecessary; no `pip install` command is needed.
+- **Interface environment:** Use your existing Windows browser. No Linux graphical desktop, Node.js or npm is required.
+
+First check the Ubuntu and Python versions in your fresh installation:
+
+```bash
+cat /etc/os-release
+python3 --version
+python3.10 --version
+```
+
+Ubuntu 20.04 ships with Python 3.8 by default; `sudo apt install python3` alone does not provide Python 3.10. If `python3.10` is not found, install or configure Python 3.10 separately before continuing. The FFmpeg installation command below does not install Python 3.10.
+
+Install the required system package inside the Ubuntu terminal:
 
 ```bash
 sudo apt update
-sudo apt install python3 ffmpeg
+sudo apt install -y ffmpeg
+```
+
+Verify the installation:
+
+```bash
+python3.10 --version
+ffmpeg -version
+ffprobe -version
+```
+
+## Setup and launch
+
+After preparing the dependencies above, run the following from the repository directory. Subsequent commands explicitly use `python3.10` to avoid selecting a different system `python3` version:
+
+```bash
 cp config/cameras.example.json config/cameras.json
 ```
 
 Edit `config/cameras.json`. Replace all three placeholder URLs (`192.168.1.101`, `.102`, `.103`), including credentials and the manufacturer's stream path. `/stream1` is only an example. URL-encode special characters in credentials. Camera names must be unique and contain only letters, digits, underscores or hyphens, up to 48 characters.
 
 ```bash
-python3 -m camera_rct
+python3.10 -m camera_rct
 ```
 
 Open **http://localhost:8765**, select ID/group/visit and click **Start**. Click **Stop** and wait for **Session finished** before exiting. Terminal `Ctrl+C` or SIGTERM also stops workers and attempts to finalize video files.
@@ -36,7 +76,7 @@ Open **http://localhost:8765**, select ID/group/visit and click **Start**. Click
 On WSL2, use this command and open the URL in a **Windows browser**, without requiring a Linux graphical environment:
 
 ```bash
-python3 -m camera_rct --no-browser
+python3.10 -m camera_rct --no-browser
 ```
 
 Use `--port 8766` for another port or `--config /path/to/cameras.json` for another configuration. The service listens only on `127.0.0.1`. If WSL2 localhost access fails, check Windows/WSL localhost forwarding. Cameras must be reachable from WSL2; VPNs, firewalls and subnets can affect access.
@@ -91,12 +131,12 @@ data/                  Generated cache and process lock
 logs/                  Generated aggregate events
 ```
 
-Real configuration (including passwords), cache and logs are ignored by Git. Default recordings are outside the repository. To migrate, copy the project, real configuration and `data/state.json`, install Python/FFmpeg, then verify camera addresses and output paths. Copy existing recordings separately.
+Real configuration (including passwords), cache and logs are ignored by Git. Default recordings are outside the repository. To migrate, copy the project, real configuration and `data/state.json`, install Python 3.10 and FFmpeg, then verify camera addresses and output paths. Copy existing recordings separately.
 
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3.10 -m unittest discover -s tests -v
 ```
 
 Tests cover persistence and limits, one/two/all camera failures, startup/frame timeouts, manual stop, unique session directories and HTTP mutation checks. Real FFmpeg-generated video verifies readable MKV output (skipped without FFmpeg/ffprobe). Simulations do not replace hardware acceptance testing: connect all three cameras, disconnect them one by one, verify remaining recordings continue, then inspect logs and play back the files.

@@ -15,20 +15,60 @@
 
 仓库最初没有旧录制代码，因此文件命名和 MKV 格式是新默认值。界面显示录制状态，不提供实时视频预览。独立连接不保证三路画面帧级同步。
 
-## 安装与启动
+## 运行环境与依赖
 
-在项目目录执行（Python 3.8+）：
+使用 **Python 3.10**。当前代码和测试只使用 Python 标准库，**无需安装第三方 Python 包**。仓库的 `requirements.txt` 记录这一点，没有需要通过 pip 安装的依赖。
+
+| 依赖 | 用途与安装方式 |
+| --- | --- |
+| Python 3.10 标准库 | `http.server` 提供界面服务；`subprocess`、`threading`、`selectors` 管理录像进程；`json`、`pathlib` 保存配置；`fcntl` 提供 Linux 进程锁；`unittest` 运行测试。随 Python 提供，无需 pip 安装 |
+| FFmpeg / ffprobe | 系统命令行工具，用于 RTSP 录制和视频验证；通过 Ubuntu 的 `ffmpeg` 软件包安装，不是 Python 包 |
+| 浏览器 | 打开本地操作界面；WSL2 可使用 Windows 浏览器 |
+
+### 全新 WSL Ubuntu 的依赖清单
+
+- **Python 运行环境：** Python 3.10（包含标准库）。
+- **Ubuntu 系统软件包：** `ffmpeg`，同时提供 `ffmpeg` 和 `ffprobe` 命令；apt 会自动安装它所需的系统依赖。
+- **通过 pip 安装的 Python 包：** 无。无需安装 OpenCV、Flask、NumPy 或 Python FFmpeg 包，也无需运行 `pip install`。
+- **界面环境：** 使用现有 Windows 浏览器即可，无需安装 Linux 图形桌面、Node.js 或 npm。
+
+先检查新安装的 Ubuntu 和 Python 版本：
+
+```bash
+cat /etc/os-release
+python3 --version
+python3.10 --version
+```
+
+Ubuntu 20.04 默认提供 Python 3.8，单独执行 `sudo apt install python3` 不会得到 Python 3.10。若 `python3.10` 提示找不到命令，需要先单独安装或配置 Python 3.10；下面安装 FFmpeg 的命令不会安装 Python 3.10。
+
+在 Ubuntu 终端安装所需系统软件包：
 
 ```bash
 sudo apt update
-sudo apt install python3 ffmpeg
+sudo apt install -y ffmpeg
+```
+
+安装完成后检查：
+
+```bash
+python3.10 --version
+ffmpeg -version
+ffprobe -version
+```
+
+## 安装与启动
+
+完成上述依赖准备后，在项目目录执行。后续命令显式使用 `python3.10`，避免使用到系统中其他版本的 `python3`：
+
+```bash
 cp config/cameras.example.json config/cameras.json
 ```
 
 编辑 `config/cameras.json`：示例中的三个 IP 为 `192.168.1.101`、`.102`、`.103`，请替换完整 RTSP 地址，包括用户名、密码和厂商指定的流路径。`/stream1` 只是示例。密码中的 `@`、`:` 等特殊字符需要 URL 编码。摄像头名称必须唯一，只能使用字母、数字、下划线、短横线，最多 48 字符。
 
 ```bash
-python3 -m camera_rct
+python3.10 -m camera_rct
 ```
 
 打开 **http://localhost:8765**，选择编号、组别、次数，点击“开始录制”。结束时点“停止录制”，等到显示“本次录制已结束”再退出。终端 `Ctrl+C` 或 SIGTERM 也会停止各路并尽量完成视频封装。
@@ -36,7 +76,7 @@ python3 -m camera_rct
 WSL2 中运行下面命令，然后在 **Windows 浏览器**打开上述地址，无需 WSL 图形环境：
 
 ```bash
-python3 -m camera_rct --no-browser
+python3.10 -m camera_rct --no-browser
 ```
 
 端口冲突时用 `--port 8766`，自定义配置用 `--config /path/to/cameras.json`。程序仅监听 `127.0.0.1`。若 WSL2 无法通过 localhost 访问，请检查 Windows/WSL 的 localhost 转发。摄像头需要能从 WSL2 访问；VPN、防火墙或不同网段可能影响连接。
@@ -91,12 +131,12 @@ data/                  自动生成：缓存和进程锁
 logs/                  自动生成：汇总日志
 ```
 
-真实配置（包含密码）、缓存、日志已被 Git 忽略；默认录像在仓库外。迁移时复制项目、真实配置和 `data/state.json`，安装 Python/FFmpeg，并核对摄像头地址及输出路径。已有录像需另行复制。
+真实配置（包含密码）、缓存、日志已被 Git 忽略；默认录像在仓库外。迁移时复制项目、真实配置和 `data/state.json`，安装 Python 3.10 和 FFmpeg，并核对摄像头地址及输出路径。已有录像需另行复制。
 
 ## 测试
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3.10 -m unittest discover -s tests -v
 ```
 
 测试覆盖缓存及编号边界、一/两/全部摄像头故障、启动与断流超时、手动停止、重复录制不覆盖和 HTTP 操作校验。真实 FFmpeg 生成测试画面并验证 MKV 可读性（未安装 FFmpeg/ffprobe 则跳过）。模拟测试不能替代实机验收：接入三路摄像头后逐台断开，确认剩余录像持续写入，最后检查日志与视频回放。

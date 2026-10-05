@@ -1,0 +1,3 @@
+# Target runtime: Python 3.10 (Ubuntu desktop or WSL2).
+# No third-party Python packages are required; runtime and tests use the standard library.
+# External system dependency: FFmpeg/ffprobe, installed with `sudo apt install ffmpeg`.
