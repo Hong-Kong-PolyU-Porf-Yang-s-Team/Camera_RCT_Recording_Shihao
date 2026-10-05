@@ -172,6 +172,7 @@ class Recorder:
         selector = selectors.DefaultSelector()
         state, reason = "failed", "worker_error"
         try:
+            # 每个摄像头独立运行一个 FFmpeg 进程，避免单路故障影响其他摄像头。
             process = subprocess.Popen(ffmpeg_command(self.binary, camera, self.session_dir / (name + ".mkv")),
                                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                        stderr=subprocess.DEVNULL, start_new_session=True)
@@ -181,6 +182,7 @@ class Recorder:
             pending = b""
             while True:
                 if self.stop_event.is_set():
+                    # 主线程请求停止时，记录正常停止原因并跳出循环。
                     state, reason = "stopped", "user_stop"
                     break
                 for key, _ in selector.select(timeout=0.2):
@@ -196,6 +198,7 @@ class Recorder:
                             except ValueError:
                                 continue
                             if frame > last_frame:
+                                # 只有帧数继续增长才算有进展，并在首帧到达时标记为录制中。
                                 last_frame, last_progress = frame, time.monotonic()
                                 with self.lock:
                                     if self.cameras[name]["state"] == "connecting":
@@ -203,19 +206,24 @@ class Recorder:
                                         self.event("camera_recording", name)
                 code = process.poll()
                 if code is not None:
+                    # FFmpeg 自行退出通常表示流结束或进程异常退出。
                     reason = "stream_ended_exit_{}".format(code)
                     break
                 now = time.monotonic()
                 if last_frame == 0 and now - started > self.config["startup_timeout_seconds"]:
+                    # 启动超时表示尚未收到任何视频帧。
                     reason = "startup_timeout"
                     break
                 if last_frame > 0 and now - last_progress > self.config["stall_timeout_seconds"]:
+                    # 已经有过视频帧但长时间没有新帧，判定为流卡住。
                     reason = "frame_timeout"
                     break
         except OSError:
+            # 进程创建、管道读取或 selector 操作失败时交给统一收尾逻辑处理。
             reason = "process_or_io_error"
         finally:
             if process is not None:
+                # 无论退出原因是什么，都确保 FFmpeg 和输出管道被回收。
                 finish_process(process)
                 if process.stdout:
                     process.stdout.close()

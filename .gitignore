@@ -8,3 +8,4 @@ logs/
 tests/
 test_*.py
 
+data_fork/
