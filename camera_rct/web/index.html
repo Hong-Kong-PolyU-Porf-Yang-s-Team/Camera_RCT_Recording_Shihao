@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTSP 录像 / Recorder</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>摄像头录制 <small>RTSP Recorder</small></h1>
+    <fieldset id="selection" disabled>
+      <legend>录制信息 / Recording details</legend>
+      <label for="number">编号 / ID</label>
+      <div class="counter">
+        <button id="minus" type="button" aria-label="编号减一 / Decrease ID">−</button>
+        <output id="number">0001</output>
+        <button id="plus" type="button" aria-label="编号加一 / Increase ID">+</button>
+      </div>
+      <label for="group">组别 / Group</label>
+      <select id="group"><option value="I">I — Intervention / 干预</option><option value="C">C — Control / 对照</option></select>
+      <label for="visit">次数 / Visit</label>
+      <select id="visit"><option value="1">1</option><option value="2">2</option></select>
+    </fieldset>
+    <div class="actions">
+      <button id="start" type="button" disabled>开始录制<br><small>Start</small></button>
+      <button id="stop" type="button" disabled>停止录制<br><small>Stop</small></button>
+    </div>
+    <p id="summary" role="status">正在连接 / Connecting…</p>
+    <ul id="cameras"></ul>
+    <p id="error" role="alert"></p>
+    <p id="session"></p>
+    <footer>选项自动保存 · 关闭网页后录制仍继续<br>Selections saved · Recording continues if this page closes</footer>
+  </main>
+</body>
+</html>

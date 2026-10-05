@@ -1,0 +1,10 @@
+{
+  "output_dir": "~/Desktop/data",
+  "startup_timeout_seconds": 30,
+  "stall_timeout_seconds": 15,
+  "cameras": [
+    {"name": "camera1", "url": "rtsp://USER:PASSWORD@192.168.1.101:554/stream1"},
+    {"name": "camera2", "url": "rtsp://USER:PASSWORD@192.168.1.102:554/stream1"},
+    {"name": "camera3", "url": "rtsp://USER:PASSWORD@192.168.1.103:554/stream1"}
+  ]
+}

@@ -1,0 +1,27 @@
+:root { font-family: system-ui, sans-serif; color: #18232d; background: #edf0f3; font-size: 21px; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 14px; }
+main { max-width: 490px; margin: 0 auto; background: white; padding: 22px; border-radius: 12px; }
+h1 { font-size: 1.3rem; margin: 0 0 20px; }
+h1 small { display: block; font-size: .8rem; font-weight: 400; color: #53606b; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { font-size: .8rem; margin-bottom: 14px; }
+label { display: block; margin: 12px 0 8px; font-weight: 600; }
+button, select { font: inherit; min-height: 58px; border: 1px solid #9aa5ad; border-radius: 8px; }
+button { cursor: pointer; padding: 8px 18px; background: #edf0f3; }
+button:disabled, select:disabled { opacity: .5; cursor: default; }
+button:focus-visible, select:focus-visible { outline: 3px solid #df9100; outline-offset: 3px; }
+select { width: 100%; background: white; padding: 8px; }
+.counter { display: flex; align-items: center; gap: 12px; }
+.counter button { width: 68px; font-size: 1.6rem; }
+output { flex: 1; text-align: center; font-size: 2.1rem; font-variant-numeric: tabular-nums; }
+.actions { display: flex; gap: 12px; margin-top: 24px; }
+.actions button { flex: 1; color: white; border: 0; }
+#start { background: #16643d; } #stop { background: #a02b32; }
+small { font-size: .75rem; }
+ul { list-style: none; padding: 0; }
+li { padding: 9px 0; border-bottom: 1px solid #dde2e6; overflow-wrap: anywhere; }
+li[data-state="failed"], #error { color: #a02028; }
+li[data-state="recording"] { color: #16643d; }
+#session, footer { font-size: .68rem; color: #596773; overflow-wrap: anywhere; }
+#error { font-size: .8rem; }
