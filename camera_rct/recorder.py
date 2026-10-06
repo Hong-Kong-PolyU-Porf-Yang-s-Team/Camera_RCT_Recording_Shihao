@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .storage import SelectionStore, write_json
+from .storage import SelectionStore
 
 
 def timestamp():
@@ -112,25 +112,23 @@ class Recorder:
             line = json.dumps(entry, ensure_ascii=False)
             print(line, flush=True)
             # Never include RTSP URLs or credentials in persistent logs.
-            for path in (self.log_path, self.session_dir / "events.jsonl"):
-                try:
-                    with path.open("a", encoding="utf-8") as stream:
-                        stream.write(line + "\n")
-                except OSError:
-                    self.log_error = "日志写入失败，请检查磁盘 / Cannot write event log; check disk"
+            try:
+                with self.log_path.open("a", encoding="utf-8") as stream:
+                    stream.write(line + "\n")
+            except OSError:
+                self.log_error = "日志写入失败，请检查磁盘 / Cannot write event log; check disk"
 
     def start(self):
         with self.lock:
             if self.active:
                 raise ValueError("已经在录制 / Recording is already active")
             selection = dict(self.store.value)
-            session = "{number:04d}_{group}_{visit}_".format(**selection)
-            session += datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            directory = self.config["output_dir"] / session
-            directory.mkdir(parents=True, exist_ok=False)
-            write_json(directory / "session.json", {
-                "session": session, "started_at": timestamp(), "selection": selection,
-                "cameras": [camera["name"] for camera in self.config["cameras"]]})
+            session = datetime.now().strftime("%Y%m%d") + "_{number:04d}_{group}_{visit}".format(**selection)
+            directory = self.config["output_dir"]
+            directory.mkdir(parents=True, exist_ok=True)
+            existing = sorted(path.name for path in directory.glob(session + "_*.*") if path.is_file())
+            if existing:
+                raise ValueError("已录制，请删除旧文件 / Already recorded, please delete old files:\n" + "\n".join(existing))
             self.session, self.session_dir = session, directory
             self.stop_event = threading.Event()
             self.active, self.stopping, self.log_error = True, False, None
@@ -138,8 +136,9 @@ class Recorder:
                             "reason": None} for camera in self.config["cameras"]}
             self.threads = []
             self.event("session_started")
-            for camera in self.config["cameras"]:
-                thread = threading.Thread(target=self._record, args=(camera,), daemon=True)
+            for number, camera in enumerate(self.config["cameras"], start=1):
+                output = directory / (session + "_{}.mkv".format(number))
+                thread = threading.Thread(target=self._record, args=(camera, output), daemon=True)
                 self.threads.append(thread)
                 try:
                     thread.start()
@@ -166,14 +165,14 @@ class Recorder:
                 self.active, self.stopping = False, False
                 self.event("session_finished", reason="user_stop" if self.stop_event.is_set() else "all_cameras_failed")
 
-    def _record(self, camera):
+    def _record(self, camera, output):
         name = camera["name"]
         process = None
         selector = selectors.DefaultSelector()
         state, reason = "failed", "worker_error"
         try:
             # 每个摄像头独立运行一个 FFmpeg 进程，避免单路故障影响其他摄像头。
-            process = subprocess.Popen(ffmpeg_command(self.binary, camera, self.session_dir / (name + ".mkv")),
+            process = subprocess.Popen(ffmpeg_command(self.binary, camera, output),
                                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                        stderr=subprocess.DEVNULL, start_new_session=True)
             selector.register(process.stdout, selectors.EVENT_READ)

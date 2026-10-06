@@ -10,7 +10,7 @@ A compact, large-text recording interface for Ubuntu 20.04 desktop and Ubuntu 20
 - Dropdowns for **I (Intervention) / C (Control)** and **1 / 2**.
 - Selections immediately persisted to `data/state.json` and restored on restart. IDs do not increment automatically; press `+` for the next participant.
 - Independent RTSP recording: failed cameras do not stop healthy ones, even if only one remains. The session ends automatically when all fail, or manually using Stop.
-- Videos default to **`~/Desktop/data/`**, with a unique directory for every session.
+- Videos default to **`~/Desktop/data/`**, with all videos directly in one folder. Duplicate recordings cancel the entire start operation with an error.
 - Logs identify the camera, session, reason and timestamp, using the system timezone with a UTC offset.
 
 There was no legacy recorder in the repository, so naming and MKV are new defaults. The interface displays recording status, without live video preview. Independent connections do not provide frame-level synchronization.
@@ -87,18 +87,17 @@ Use `--port 8766` for another port or `--config /path/to/cameras.json` for anoth
 
 ```text
 ~/Desktop/data/
-└── 0001_I_1_20261005_143000_123456/
-    ├── camera1.mkv
-    ├── camera2.mkv
-    ├── camera3.mkv
-    ├── session.json
-    └── events.jsonl
+├── 20261006_0001_I_1_1.mkv
+├── 20261006_0001_I_1_2.mkv
+└── 20261006_0001_I_1_3.mkv
 ```
 
-A camera failing at startup may produce no video or an incomplete file. `session.json` stores selections and camera names. Session events go into `events.jsonl`, with an aggregate copy in the project's `logs/events.jsonl`; events also appear in the terminal. Example:
+Names follow `YYYYMMDD_ID_C-or-I_1-or-2_cameraNumber.mkv`. IDs have four digits; camera numbers start at 1 in configuration order. Any existing recording with the same date, ID, group and visit blocks the entire start operation. The page lists all matching filenames; delete them before retrying. Files are never automatically renamed or overwritten.
+
+A camera failing at startup may produce no video or an incomplete file. Events are stored only in the project's `logs/events.jsonl` and printed in the terminal. No per-session metadata or event files are created. Example:
 
 ```json
-{"time":"2026-10-05T14:30:15+08:00","session":"0001_I_1_20261005_143000_123456","event":"camera_failed","camera":"camera2","reason":"frame_timeout"}
+{"time":"2026-10-05T14:30:15+08:00","session":"20261005_0001_I_1","event":"camera_failed","camera":"camera2","reason":"frame_timeout"}
 ```
 
 Each camera uses an independent FFmpeg process over RTSP/TCP. Its first video stream and optional audio are copied without re-encoding into MKV. Codecs must be supported by FFmpeg/MKV. See the official [RTSP documentation](https://ffmpeg.org/ffmpeg-protocols.html#rtsp) and [stream copy documentation](https://ffmpeg.org/ffmpeg.html#Streamcopy).
@@ -139,4 +138,4 @@ Real configuration (including passwords), cache and logs are ignored by Git. Def
 python3.10 -m unittest discover -s tests -v
 ```
 
-Tests cover persistence and limits, one/two/all camera failures, startup/frame timeouts, manual stop, unique session directories and HTTP mutation checks. Real FFmpeg-generated video verifies readable MKV output (skipped without FFmpeg/ffprobe). Simulations do not replace hardware acceptance testing: connect all three cameras, disconnect them one by one, verify remaining recordings continue, then inspect logs and play back the files.
+Tests cover persistence and limits, one/two/all camera failures, startup/frame timeouts, manual stop, flat filenames, duplicate rejection, restored IDs after restart and HTTP mutation checks. Real FFmpeg-generated video verifies readable MKV output (skipped without FFmpeg/ffprobe). Simulations do not replace hardware acceptance testing: connect all three cameras, disconnect them one by one, verify remaining recordings continue, then inspect logs and play back the files.

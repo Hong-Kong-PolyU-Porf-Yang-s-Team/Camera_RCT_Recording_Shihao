@@ -1,6 +1,6 @@
 "use strict";
 const element = (id) => document.getElementById(id);
-let token, status, busy = false;
+let token, status, busy = false, actionError = "";
 const states = {connecting: "连接中 / Connecting", recording: "录制中 / Recording",
   failed: "故障 / Failed", stopped: "已停止 / Stopped"};
 const reasons = {startup_timeout: "连接超时 / Connection timeout", frame_timeout: "断流超时 / No new frames",
@@ -40,14 +40,14 @@ function render() {
     }
     return item;
   }));
-  if (status.log_error) element("error").textContent = status.log_error;
+  element("error").textContent = actionError || status.log_error || "";
 }
 async function change(path, body) {
   if (busy) return;
+  actionError = "";
   busy = true; render();
-  element("error").textContent = "";
   try { status = await request(path, body); }
-  catch (error) { element("error").textContent = error.message; }
+  catch (error) { actionError = error.message; }
   finally { busy = false; render(); }
 }
 function select(patch) { change("/api/selection", {...status.selection, ...patch}); }
@@ -64,7 +64,6 @@ async function poll() {
     try {
       token = (await request("/api/token")).token;
       status = await request("/api/status");
-      element("error").textContent = "";
       busy = false; render();
     } catch (error) {
       busy = false;

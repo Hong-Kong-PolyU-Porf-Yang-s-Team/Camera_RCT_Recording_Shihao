@@ -24,4 +24,4 @@ li { padding: 9px 0; border-bottom: 1px solid #dde2e6; overflow-wrap: anywhere; 
 li[data-state="failed"], #error { color: #a02028; }
 li[data-state="recording"] { color: #16643d; }
 #session, footer { font-size: .68rem; color: #596773; overflow-wrap: anywhere; }
-#error { font-size: .8rem; }
+#error { font-size: .8rem; white-space: pre-line; overflow-wrap: anywhere; }
